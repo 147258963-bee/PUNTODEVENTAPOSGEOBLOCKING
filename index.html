@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO BLOCKING | SISTEMA ERP PROFESIONAL</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #0ea5e9;
+            --bg-body: #020617;
+            --bg-card: #0f172a;
+            --border: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Login Layer */
+        #gatekeeper { position: fixed; inset: 0; background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--bg-card); padding: 3rem; border-radius: 24px; width: 400px; border: 1px solid var(--border); text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+
+        /* Sidebar Pro */
+        #nav-panel { width: 280px; background: #020617; border-right: 1px solid var(--border); padding: 2rem; display: flex; flex-direction: column; }
+        .brand { font-weight: 800; font-size: 1.5rem; color: var(--primary); letter-spacing: -1px; margin-bottom: 3rem; display: flex; align-items: center; gap: 10px; }
+        .nav-link { padding: 1rem; border-radius: 12px; cursor: pointer; color: var(--text-dim); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 600; }
+        .nav-link:hover, .nav-link.active { background: #1e293b; color: var(--primary); }
+
+        /* Contenedor Principal */
+        main { flex: 1; padding: 2.5rem; overflow-y: auto; display: none; }
+        .view { display: none;
