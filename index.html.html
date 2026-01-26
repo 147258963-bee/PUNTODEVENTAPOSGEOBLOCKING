@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO BLOCKING | ERP & QR LOGISTICS</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg-app: #f1f5f9;
+            --sidebar: #0f172a;
+            --card: #ffffff;
+            --text-main: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; transition: 0.2s; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-app); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Moderno */
+        nav { width: 260px; background: var(--sidebar); padding: 30px 20px; display: flex; flex-direction: column; color: white; }
+        .nav-btn { padding: 15px; border-radius: 12px; cursor: pointer; color: #94a3b8; margin-bottom: 8px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .nav-btn:hover, .nav-btn.active { background: #1e293b; color: var(--primary); }
+
+        /* Contenedor */
+        main { flex: 1; padding: 40px; overflow-y: auto; display: none; }
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Cards y Tablas */
+        .card { background: white; padding: 25px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; font-size: 0.8rem; color: #64748b; border-bottom: 1px solid var(--border); }
+        td { padding: 15px; border-bottom: 1px solid var(--border); }
+
+        /* QR y Etiquetas */
+        .qr-container { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px; border: 1px solid #eee; border-radius: 8px; background: #fff; width: fit-content; }
+        .qr-label { font-size: 10px; font-weight: bold; font-family: 'JetBrains Mono'; }
+
+        /* Botones e Inputs */
+        .input-pro { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; outline: none; background: #f8fafc; }
+        .btn-main { background: var(--primary); color: white; padding: 12px 25px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; width: 100%; }
+        
+        #login-view { position: fixed; inset: 0; background: #0f172a; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-view">
+        <div class="card" style="width: 350px; text-align: center;">
+            <h2 style="color:var(--primary)">GEO BLOCKING</h2>
+            <input type="password" id="pass" class="input-pro" placeholder="PIN de Acceso">
+            <button class="btn-main" onclick="access()">DESBLOQUEAR SISTEMA</button>
+        </div>
+    </div>
+
+    <nav>
+        <div style="font-size: 1.5rem; font-weight: 800; margin-bottom: 40px;">🛰️ GEO ERP</div>
+        <div class="nav-btn active" onclick="go('dash')">📊 Dashboard</div>
+        <div class="nav-btn" onclick="go('inv')">📦 Inventario QR</div>
+        <div class="nav-btn" onclick="go('pos')">💸 Caja Registradora</div>
+        <div class="nav-btn" onclick="go('hist')">📜 Reportes</div>
+    </nav>
+
+    <main id="app">
+        <section id="inv" class="view active">
+            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                <div class="card">
+                    <h3>Nuevo Producto</h3>
+                    <input type="text" id="sku" class="input-pro" placeholder="SKU Único (ej: SKU-101)">
+                    <input type="text" id="nom" class="input-pro" placeholder="Nombre">
+                    <input type="number" id="cost" class="input-pro" placeholder="Costo Compra">
+                    <input type="number" id="price" class="input-pro" placeholder="Precio Venta">
+                    <input type="number" id="stock" class="input-pro" placeholder="Stock">
+                    <button class="btn-main" onclick="saveProduct()">GENERAR Y GUARDAR</button>
+                </div>
+                <div class="card">
+                    <h3>Listado de Existencias</h3>
+                    <table>
+                        <thead><tr><th>QR / SKU</th><th>PRODUCTO</th><th>PRECIO</th><th>STOCK</th></tr></thead>
+                        <tbody id="inv-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="dash" class="view"><h1>Dashboard</h1><div id="stats" class="card">Cargando datos...</div></section>
+        <section id="pos" class="view"><h1>Punto de Venta</h1><input type="text" id="scan" class="input-pro" placeholder="Escanee QR o SKU..."></section>
+        <section id="hist" class="view"><h1>Historial</h1><div id="hist-list"></div></section>
+    </main>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyB" + "D7" + "nK9Xn_0r" + "O8809L" + "Gz9_78N" + "S0l" + "JjU",
+        authDomain: "geoblockingerp.firebaseapp.com",
+        projectId: "geoblockingerp",
+        storageBucket: "geoblockingerp.appspot.com",
+        messagingSenderId: "415000353756",
+        appId: "1:415000353756:web:f18f391a8d4b493b3d0d19"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function access() {
+        if(document.getElementById('pass').value === "GB2026") {
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            loadData();
+        }
+    }
+
+    function go(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    async function saveProduct() {
+        const sku = document.getElementById('sku').value;
+        const data = {
+            sku,
+            nombre: document.getElementById('nom').value.toUpperCase(),
+            costo: parseFloat(document.getElementById('cost').value),
+            precio: parseFloat(document.getElementById('price').value),
+            stock: parseInt(document.getElementById('stock').value)
+        };
+        await db.collection("inventario").doc(sku).set(data);
+        alert("Producto y QR generados correctamente");
+    }
+
+    function loadData() {
+        db.collection("inventario").onSnapshot(snap => {
+            const list = document.getElementById('inv-list');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const p = doc.data();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="qr-container">
+                            <div id="qr-${p.sku}"></div>
+                            <span class="qr-label">${p.sku}</span>
+                        </div>
+                    </td>
+                    <td><b>${p.nombre}</b></td>
+                    <td>$${p.precio.toLocaleString()}</td>
+                    <td>${p.stock}</td>
+                `;
+                list.appendChild(tr);
+                
+                // Generar el QR físicamente en el DOM
+                new QRCode(document.getElementById(`qr-${p.sku}`), {
+                    text: p.sku,
+                    width: 60,
+                    height: 60,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            });
+        });
+    }
+</script>
+</body>
+</html>
